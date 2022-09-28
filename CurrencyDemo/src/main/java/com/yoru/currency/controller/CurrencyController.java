@@ -1,0 +1,113 @@
+package com.yoru.currency.controller;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.net.ssl.HttpsURLConnection;
+
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.yoru.currency.entity.Currency;
+import com.yoru.currency.service.CurrencyService;
+
+
+@RestController
+@RequestMapping("/api")
+public class CurrencyController {
+	@Autowired
+	CurrencyService service;
+
+
+	@GetMapping("/currency")
+	public ResponseEntity getCurrency() {
+		return ResponseEntity.ok(service.fetchCurrency());
+	}
+	
+	@PostMapping("/currency")
+    public ResponseEntity createCurrency(@RequestBody Currency currency) {
+        String code = service.saveCurrency(currency);
+        return ResponseEntity.status(HttpStatus.CREATED).body(code);
+    }
+
+	@PutMapping("/currency/{code}")
+    public ResponseEntity upadteCurrency(@PathVariable String code, @RequestBody Currency currency) {
+        Boolean rlt = service.updCurrency(currency, code);
+        if (!rlt) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(code+"幣別不存在");
+        }
+        return ResponseEntity.status(HttpStatus.OK).body("");
+//        return ResponseEntity.ok("");
+    }
+	
+	@DeleteMapping("/currency/{code}")
+    public ResponseEntity deleteCurrency(@PathVariable String code) {
+        Boolean rlt = service.delCurrency(code);
+        if (!rlt) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(code+"幣別不存在");
+        }
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body("");
+    }
+	
+	@GetMapping("/coindeskApi")
+	public ResponseEntity<List<String>>  callApi() throws Exception {
+		URL url = new URL("https://api.coindesk.com/v1/bpi/currentprice.json");
+		HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+		conn.setDoInput(true);
+		conn.setRequestMethod("GET");
+		conn.connect();
+		
+		StringBuffer sb = new StringBuffer();
+		InputStream in = conn.getInputStream();
+		InputStreamReader isr = new InputStreamReader(in);
+		BufferedReader br = new BufferedReader(isr);
+		
+		String line = "";
+		while((line = br.readLine()) != null) {
+			sb.append(line);
+		}
+		
+		br.close();
+		isr.close();
+		in.close();
+		conn.disconnect();
+		
+		JSONObject json = new JSONObject(sb.toString());
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		String updateTime = sdf.format(new Date(json.getJSONObject("time").getString("updated")));
+		
+		JSONObject bpi = json.getJSONObject("bpi");
+		JSONObject usd = bpi.getJSONObject("USD");
+		JSONObject gbp = bpi.getJSONObject("GBP");
+		JSONObject eur = bpi.getJSONObject("EUR");
+
+		Currency usdCurr = new Currency(usd.getString("code"),"",Double.parseDouble(usd.getString("rate").replaceAll(",","")));
+		service.updCurrency(usdCurr,usd.getString("code"));
+		Currency gbpCurr = new Currency(gbp.getString("code"),"",Double.parseDouble(gbp.getString("rate").replaceAll(",","")));
+		service.updCurrency(gbpCurr,gbp.getString("code"));
+		Currency eurCurr = new Currency(eur.getString("code"),"",Double.parseDouble(eur.getString("rate").replaceAll(",","")));
+		service.updCurrency(eurCurr,eur.getString("code"));
+		
+		List<String> res = new ArrayList<String>();
+		res.add(updateTime);
+		
+		return ResponseEntity.ok(res);
+		
+	}
+}

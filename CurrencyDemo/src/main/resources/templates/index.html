@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" />
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="js/currency.js"></script>
+    <title>Title</title>
+</head>
+<body>
+<div class="container">
+    <h2>Currency API Demo</h2>
+    <div>
+    	<table id="table">
+    		<thead></thead>
+    	</table>
+    </div>
+    <div>
+	    <button id="updateAPI" th:onclick="callAPI()">呼叫 coindesk 的 API</button>
+	    <span id="update"></span>
+    </div>
+    <div th:object="${currency}">
+	    代碼:<input type="text" th:field="*{code}"/>
+	    幣別名:<input type="text" th:field="*{name}"/>
+	    匯率:<input type="text" th:field="*{rate}"/>
+	    <button id="btnInsert" th:onclick="InsertCurrency()">新增</button>
+	    <button id="btnModify" th:onclick="updateCurrency()">修改</button>
+	    <button id="btnDelete" th:onclick="deleteCurrency()">刪除</button>
+    
+    </div>
+</div>
+</body>
+</html>
