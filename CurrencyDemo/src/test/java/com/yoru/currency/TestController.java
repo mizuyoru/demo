@@ -15,6 +15,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -43,6 +45,14 @@ public class TestController {
     	return currency;
     }
     
+    public Currency getTestCurrencyChenge(){
+    	Currency currency = new Currency();
+    	currency.setCode("TWD");
+    	currency.setName("新台幣");
+    	currency.setRate(2.0);
+    	return currency;
+    }
+    
     //測試呼叫查詢幣別對應表資料 API，並顯示其內容
     @Test
     public void testGetCurrency() throws Exception {
@@ -51,8 +61,7 @@ public class TestController {
     	Currency currency = getTestCurrency();
     	expectedList.add(currency);
 
-    	Mockito.when(service.saveCurrency(getTestCurrency())).thenReturn(null);
-//    	Mockito.when(service.fetchCurrency()).thenReturn(expectedList);
+    	Mockito.when(service.fetchCurrency()).thenReturn(expectedList);
     	
     	String returnStr = mockMvc.perform(
     			MockMvcRequestBuilders.get("/api/currency")
@@ -66,43 +75,70 @@ public class TestController {
         });
         assertEquals(expectedList,  actualList);
 
-        System.out.println(expectedList);
         System.out.println(actualList);
     }
     
-//    //測試呼叫新增幣別對應表資料 API 
-//    @Test
-//    public void testInsertCurrency() throws Exception {    	
-//    	JSONObject jsonObj = new JSONObject();
-//    	jsonObj.put("code", "TWD");
-//    	jsonObj.put("name", "台幣");
-//    	jsonObj.put("rate", 1.0);
-//        
-//    	String actual = mockMvc.perform(MockMvcRequestBuilders.post("/api/currency")
-//    			.accept(MediaType.APPLICATION_JSON)
-//    			.contentType(MediaType.APPLICATION_JSON)
-//    			.content(String.valueOf(jsonObj)))
-//    			.andExpect(status().isCreated())
-//    			.andReturn().getResponse().getContentAsString()
-//    			;
-//
-//        assertEquals("TWD",  actual);
-//
-//    }
-//    //測試呼叫更新幣別對應表資料 API，並顯示其內容
-//    
-//
-//    //測試呼叫刪除幣別對應表資料 API
-//    @Test
-//    public void testDeleteCurrencySuccess() throws Exception {
-//    	String rtn = "";
-//    	Mockito.when(service.saveCurrency(getTestCurrency())).thenReturn(rtn);
-//    	System.out.println("testDeleteCurrencySuccess  "+rtn);
-//        Mockito.when(service.delCurrency("TWD")).thenReturn(true);
-//
-//        mockMvc.perform(MockMvcRequestBuilders.delete("/api/currency/TWD")
-//                .accept(MediaType.APPLICATION_JSON_UTF8 )
-//                .contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(status().isNoContent());
-//    }
+    //測試呼叫新增幣別對應表資料 API 
+    @Test
+    public void testInsertCurrency() throws Exception {    	
+    	JSONObject jsonObj = new JSONObject();
+    	jsonObj.put("code", "TWD");
+    	jsonObj.put("name", "台幣");
+    	jsonObj.put("rate", 1.0);
+        
+    	Mockito.when(service.saveCurrency(getTestCurrency())).thenReturn("TWD");
+    	
+    	String actual = mockMvc.perform(MockMvcRequestBuilders.post("/api/currency")
+    			.accept(MediaType.APPLICATION_JSON)
+    			.contentType(MediaType.APPLICATION_JSON)
+    			.content(String.valueOf(jsonObj)))
+    			.andExpect(status().isCreated())
+    			.andReturn().getResponse().getContentAsString()
+    			;
+
+        assertEquals("TWD",  actual);
+    }
+    
+    //測試呼叫更新幣別對應表資料 API，並顯示其內容
+    @Test
+    public void testUpdCurrency() throws Exception {
+    	Mockito.when(service.saveCurrency(getTestCurrency())).thenReturn("TWD");
+    	Mockito.when(service.updCurrency(getTestCurrencyChenge(), getTestCurrencyChenge().getCode()))
+    	.thenReturn(true);
+    	
+    	mockMvc.perform(
+	    			MockMvcRequestBuilders.put("/api/currency/TWD")
+	    			.accept(MediaType.APPLICATION_JSON)
+	    			.contentType(MediaType.APPLICATION_JSON)
+    				.content(this.objectMapper.writeValueAsString(getTestCurrencyChenge()))
+    			)
+    			.andExpect(status().isOk())
+    			;
+    }
+    
+
+    //測試呼叫刪除幣別對應表資料 API
+    @Test
+    public void testDeleteCurrencySuccess() throws Exception {
+    	
+    	Mockito.when(service.saveCurrency(getTestCurrency())).thenReturn("TWD");
+    	
+        Mockito.when(service.delCurrency("TWD")).thenReturn(true);
+     	
+    	JSONObject jsonObj = new JSONObject();
+    	jsonObj.put("code", "TWD");
+    	jsonObj.put("name", "台幣");
+    	jsonObj.put("rate", 1.0);
+    	
+    	mockMvc.perform(MockMvcRequestBuilders.post("/api/currency")
+    			.accept(MediaType.APPLICATION_JSON)
+    			.contentType(MediaType.APPLICATION_JSON)
+    			.content(String.valueOf(jsonObj)))
+    			.andExpect(status().isCreated());
+    	
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/currency/TWD")
+                .accept(MediaType.APPLICATION_JSON_UTF8 )
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
 }

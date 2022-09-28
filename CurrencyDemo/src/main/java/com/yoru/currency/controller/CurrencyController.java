@@ -52,7 +52,7 @@ public class CurrencyController {
         if (!rlt) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(code+"幣別不存在");
         }
-        return ResponseEntity.status(HttpStatus.OK).body("");
+        return ResponseEntity.status(HttpStatus.OK).body(new ArrayList());
 //        return ResponseEntity.ok("");
     }
 	
@@ -62,50 +62,19 @@ public class CurrencyController {
         if (!rlt) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(code+"幣別不存在");
         }
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body("");
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ArrayList());
     }
 	
-	@GetMapping("/coindeskApi")
-	public ResponseEntity<List<String>>  callApi() throws Exception {
-		URL url = new URL("https://api.coindesk.com/v1/bpi/currentprice.json");
-		HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-		conn.setDoInput(true);
-		conn.setRequestMethod("GET");
-		conn.connect();
-		
-		StringBuffer sb = new StringBuffer();
-		InputStream in = conn.getInputStream();
-		InputStreamReader isr = new InputStreamReader(in);
-		BufferedReader br = new BufferedReader(isr);
-		
-		String line = "";
-		while((line = br.readLine()) != null) {
-			sb.append(line);
-		}
-		
-		br.close();
-		isr.close();
-		in.close();
-		conn.disconnect();
-		
-		JSONObject json = new JSONObject(sb.toString());
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		String updateTime = sdf.format(new Date(json.getJSONObject("time").getString("updated")));
-		
-		JSONObject bpi = json.getJSONObject("bpi");
-		JSONObject usd = bpi.getJSONObject("USD");
-		JSONObject gbp = bpi.getJSONObject("GBP");
-		JSONObject eur = bpi.getJSONObject("EUR");
-
-		Currency usdCurr = new Currency(usd.getString("code"),"",Double.parseDouble(usd.getString("rate").replaceAll(",","")));
-		service.updCurrency(usdCurr,usd.getString("code"));
-		Currency gbpCurr = new Currency(gbp.getString("code"),"",Double.parseDouble(gbp.getString("rate").replaceAll(",","")));
-		service.updCurrency(gbpCurr,gbp.getString("code"));
-		Currency eurCurr = new Currency(eur.getString("code"),"",Double.parseDouble(eur.getString("rate").replaceAll(",","")));
-		service.updCurrency(eurCurr,eur.getString("code"));
+	@GetMapping("/callAPI")
+	public String callAPI() throws Exception {
+		return service.callAPI();
+	}
+	
+	@GetMapping("/transferAPI")
+	public ResponseEntity<List<String>> transferAPI() throws Exception {
 		
 		List<String> res = new ArrayList<String>();
-		res.add(updateTime);
+		res.add(service.transferAPI());
 		
 		return ResponseEntity.ok(res);
 		

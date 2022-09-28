@@ -17,7 +17,7 @@ function getDataTable(){
 }
 
 function callAPI(){
-	$.getJSON('/api/coindeskApi',function(res){
+	$.getJSON('/api/transferAPI',function(res){
 		$("#update").text('更新時間: '+res);
 		$('#table').DataTable().destroy();
 		getDataTable();
